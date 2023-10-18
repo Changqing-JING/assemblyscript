@@ -4990,26 +4990,29 @@
    local.get $0
    i32.const 1536
    i32.store $0 offset=4
-   local.get $0
-   local.get $1
-   i32.store $0 offset=40
-   local.get $0
-   i32.const 1536
-   i32.store $0 offset=44
-   local.get $1
-   i32.const 1536
    local.get $1
    i32.const 1536
    call $std/operator-overloading/TesterElementAccess#__get
    i32.const 1
    i32.add
+   local.set $0
+   global.get $~lib/memory/__stack_pointer
+   global.get $std/operator-overloading/tea
+   local.tee $1
+   i32.store $0
+   global.get $~lib/memory/__stack_pointer
+   i32.const 1536
+   i32.store $0 offset=4
+   local.get $1
+   i32.const 1536
+   local.get $0
    call $std/operator-overloading/TesterElementAccess#__set
    global.get $~lib/memory/__stack_pointer
    global.get $std/operator-overloading/tea
    local.tee $0
    i32.store $0
    global.get $~lib/memory/__stack_pointer
-   i32.const 1568
+   i32.const 0
    i32.store $0 offset=4
    global.get $~lib/memory/__stack_pointer
    global.get $std/operator-overloading/tea
@@ -5019,7 +5022,7 @@
    i32.const 1568
    i32.store $0 offset=44
    local.get $0
-   i32.const 1568
+   i32.const 0
    local.get $1
    i32.const 1568
    call $std/operator-overloading/TesterElementAccess#__get

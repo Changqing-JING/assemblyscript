@@ -4716,6 +4716,11 @@ export class Compiler extends DiagnosticEmitter {
       }
     }
     if (!compound) return expr;
+
+    let exprTempLocal = this.currentFlow.getTempLocal(this.currentType);
+    let calculationResRef = module.local_set(exprTempLocal.index, expr, false);
+
+    let valueExprRef = module.local_get(exprTempLocal.index, this.currentType.toRef());
     let resolver = this.resolver;
     let target = resolver.lookupExpression(left, this.currentFlow);
     if (!target) return module.unreachable();
@@ -4728,15 +4733,18 @@ export class Compiler extends DiagnosticEmitter {
       );
       return module.unreachable();
     }
-    return this.makeAssignment(
+
+    let assignmentExprRef = this.makeAssignment(
       target,
-      expr,
+      valueExprRef,
       this.currentType,
       right,
       resolver.currentThisExpression,
       resolver.currentElementExpression,
       contextualType != Type.void
     );
+
+    return module.block(null, [calculationResRef, assignmentExprRef], this.currentType.toRef());
   }
 
   makeLt(leftExpr: ExpressionRef, rightExpr: ExpressionRef, type: Type): ExpressionRef {
@@ -7022,8 +7030,24 @@ export class Compiler extends DiagnosticEmitter {
               expression.range
             );
           }
+
+          let indexLocal = this.currentFlow.getTempLocal(Type.i32);
+          let functionName = this.currentFlow.targetFunction.internalName;
+          let indexExpression = expression.getElementExpression(functionName);
+
+          assert(indexExpression.kind != NodeKind.Compiled);
+          let indexType = indexedGet.signature.parameterTypes[0];
+          let indexExpressionRef = this.compileExpression(indexExpression, indexType, Constraints.ConvImplicit);
+          let teeExprRef = module.local_tee(indexLocal.index, indexExpressionRef, false, TypeRef.I32);
+
+          let indexGetExpr = module.local_get(indexLocal.index, TypeRef.I32);
+          
+          expression.addCached(functionName, Node.createCompiledExpression(indexGetExpr, indexType, expression.elementExpression.range));
+
+          indexExpression = Node.createCompiledExpression(teeExprRef, indexType, expression.elementExpression.range);
+
           return this.compileCallDirect(indexedGet, [
-            expression.elementExpression
+            indexExpression
           ], expression, thisArg, constraints);
         }
       }
@@ -9355,23 +9379,14 @@ export class Compiler extends DiagnosticEmitter {
       return module.unreachable();
     }
 
-    // simplify if dropped anyway
-    if (!tempLocal) {
-      return this.makeAssignment(
-        target,
-        expr,
-        this.currentType,
-        expression.operand,
-        resolver.currentThisExpression,
-        resolver.currentElementExpression,
-        false
-      );
-    }
+    let exprTempLocal = this.currentFlow.getTempLocal(this.currentType);
+    let calculationResRef = module.local_set(exprTempLocal.index, expr, false);
 
-    // otherwise use the temp. local for the intermediate value (always possibly overflows)
+    let valueExprRef = module.local_get(exprTempLocal.index, this.currentType.toRef());
+
     let setValue = this.makeAssignment(
       target,
-      expr, // includes a tee of getValue to tempLocal
+      valueExprRef, // includes a tee of getValue to tempLocal
       this.currentType,
       expression.operand,
       resolver.currentThisExpression,
@@ -9379,13 +9394,16 @@ export class Compiler extends DiagnosticEmitter {
       false
     );
 
-    this.currentType = tempLocal.type;
-    let typeRef = tempLocal.type.toRef();
+    let blockExpressions = [calculationResRef, setValue,];
 
-    return module.block(null, [
-      setValue,
-      module.local_get(tempLocal.index, typeRef)
-    ], typeRef); // result of 'x++' / 'x--' might overflow
+    // otherwise use the temp. local for the intermediate value (always possibly overflows)
+    if(tempLocal){
+      this.currentType = tempLocal.type;
+      let typeRef = tempLocal.type.toRef();
+      blockExpressions.push(module.local_get(tempLocal.index, typeRef));
+    }
+
+    return module.block(null, blockExpressions, this.currentType.toRef()); // result of 'x++' / 'x--' might overflow
   }
 
   private compileUnaryPrefixExpression(
