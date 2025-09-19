@@ -3153,7 +3153,8 @@ export class Compiler extends DiagnosticEmitter {
           } else {
             local = flow.addScopedLocal(name, type);
           }
-          console.log(`assign local ${name} type ${type.toString()} at ${local.index}`);
+          const line = statement.range.source.lineAt(statement.range.start);
+          console.log(`assign local ${name} type ${type.toString()} at ${local.index}, range start ${line}`);
           if (isConst) flow.setLocalFlag(local.index, LocalFlags.Constant);
         } else {
           let existing = flow.lookupLocal(name);
