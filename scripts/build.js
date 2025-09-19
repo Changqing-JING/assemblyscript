@@ -210,7 +210,7 @@ const common = {
   bundle: true,
   sourcemap: true,
   treeShaking: true,
-  minify: true
+  minify: false,
 };
 
 async function invokeBuild(options) {

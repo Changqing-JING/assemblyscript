@@ -1626,6 +1626,8 @@ export class Compiler extends DiagnosticEmitter {
         module.flatten(stmts, instance.signature.returnType.toRef())
       );
 
+      console.log(`compiled function: ${instance.internalName} ref ${funcRef}`);
+
     // imported function
     } else if (instance.is(CommonFlags.Ambient)) {
       mangleImportName(instance, declarationNode); // TODO: check for duplicates
@@ -3132,6 +3134,7 @@ export class Compiler extends DiagnosticEmitter {
           flow.isInline
         ) { // here: not top-level
           let existingLocal = flow.getScopedLocal(name);
+          
           if (existingLocal) {
             if (!existingLocal.declaration.range.source.isNative) {
               this.errorRelated(
@@ -3150,6 +3153,7 @@ export class Compiler extends DiagnosticEmitter {
           } else {
             local = flow.addScopedLocal(name, type);
           }
+          console.log(`assign local ${name} type ${type.toString()} at ${local.index}`);
           if (isConst) flow.setLocalFlag(local.index, LocalFlags.Constant);
         } else {
           let existing = flow.lookupLocal(name);

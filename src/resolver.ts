@@ -3428,6 +3428,7 @@ export class Resolver extends DiagnosticEmitter {
     /** How to proceed with eventual diagnostics. */
     reportMode: ReportMode
   ): void {
+    console.log(`resolve class  ${instance.internalName}`);
     let members = instance.members;
     if (!members) instance.members = members = new Map();
 
@@ -3518,6 +3519,7 @@ export class Resolver extends DiagnosticEmitter {
                 }
                 let needsLayout = true;
                 if (base) {
+                  console.log(`base class is ${base.internalName}`);
                   let existingMember = base.getMember(boundPrototype.name);
                   if (existingMember && existingMember.kind == ElementKind.PropertyPrototype) {
                     let existingPrototype = <PropertyPrototype>existingMember;
@@ -3543,6 +3545,7 @@ export class Resolver extends DiagnosticEmitter {
                   let mask = byteSize - 1;
                   if (memoryOffset & mask) memoryOffset = (memoryOffset | mask) + 1;
                   boundInstance.memoryOffset = memoryOffset;
+                  console.log(`field ${memberName} type ${fieldType.toString()} at offset ${boundInstance.memoryOffset}`);
                   memoryOffset += byteSize;
                 }
                 boundPrototype.instance = boundInstance;
