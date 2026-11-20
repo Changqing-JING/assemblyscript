@@ -134,3 +134,7 @@ let moduleValue: i32 = 0;
 {
   let blockValue: i32 = 0;
 };
+
+function successNestedFunctionDeclaration(): i32 {
+  function nested(): i32 { return 42; } return nested();
+}

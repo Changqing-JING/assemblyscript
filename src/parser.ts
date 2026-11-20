@@ -3037,8 +3037,16 @@ export class Parser extends DiagnosticEmitter {
         // fall-through
       }
       default: {
-        tn.reset(state);
-        statement = this.parseExpressionStatement(tn);
+        if (token == Token.Function && tn.peek(IdentifierHandling.Prefer) == Token.Identifier) {
+          let expression = this.parseFunctionExpression(tn);
+          if (expression) {
+            statement = Node.createExpressionStatement(expression);
+            tn.skip(Token.Semicolon);
+          }
+        } else {
+          tn.reset(state);
+          statement = this.parseExpressionStatement(tn);
+        }
         break;
       }
     }
