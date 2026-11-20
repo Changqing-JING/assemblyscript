@@ -1729,6 +1729,38 @@ export class Parser extends DiagnosticEmitter {
     return Node.createFunctionExpression(declaration);
   }
 
+  /** Parses a named type in an extends or implements clause. */
+  private parseHeritageType(
+    tn: Tokenizer
+  ): NamedTypeNode | null {
+    if (!tn.skipIdentifier()) {
+      this.error(
+        DiagnosticCode.Identifier_expected,
+        tn.range()
+      );
+      return null;
+    }
+    let startPos = tn.tokenPos;
+    let name = this.parseTypeName(tn);
+    if (!name) return null;
+    let typeArguments: TypeNode[] = [];
+    if (tn.skip(Token.LessThan)) {
+      do {
+        let type = this.parseType(tn);
+        if (!type) return null;
+        typeArguments.push(type);
+      } while (tn.skip(Token.Comma));
+      if (!tn.skip(Token.GreaterThan)) {
+        this.error(
+          DiagnosticCode._0_expected,
+          tn.range(tn.pos), ">"
+        );
+        return null;
+      }
+    }
+    return Node.createNamedType(name, typeArguments, false, tn.range(startPos, tn.pos));
+  }
+
   parseClassOrInterface(
     tn: Tokenizer,
     flags: CommonFlags,
@@ -1739,8 +1771,8 @@ export class Parser extends DiagnosticEmitter {
     // at ('class' | 'interface'):
     //   Identifier
     //   ('<' TypeParameters)?
-    //   ('extends' Type)?
-    //   ('implements' Type (',' Type)*)?
+    //   ('extends' HeritageType)?
+    //   ('implements' HeritageType (',' HeritageType)*)?
     //   '{' ClassMember* '}'
 
     let isInterface = tn.token == Token.Interface;
@@ -1767,16 +1799,8 @@ export class Parser extends DiagnosticEmitter {
 
     let extendsType: NamedTypeNode | null = null;
     if (tn.skip(Token.Extends)) {
-      let type = this.parseType(tn);
-      if (!type) return null;
-      if (type.kind != NodeKind.NamedType) {
-        this.error(
-          DiagnosticCode.Identifier_expected,
-          type.range
-        );
-        return null;
-      }
-      extendsType = <NamedTypeNode>type;
+      extendsType = this.parseHeritageType(tn);
+      if (!extendsType) return null;
     }
 
     let implementsTypes: NamedTypeNode[] | null = null;
@@ -1788,18 +1812,11 @@ export class Parser extends DiagnosticEmitter {
         ); // recoverable
       }
       do {
-        let type = this.parseType(tn);
+        let type = this.parseHeritageType(tn);
         if (!type) return null;
-        if (type.kind != NodeKind.NamedType) {
-          this.error(
-            DiagnosticCode.Identifier_expected,
-            type.range
-          );
-          return null;
-        }
         if (!isInterface) {
           if (!implementsTypes) implementsTypes = [];
-          implementsTypes.push(<NamedTypeNode>type);
+          implementsTypes.push(type);
         }
       } while (tn.skip(Token.Comma));
     }

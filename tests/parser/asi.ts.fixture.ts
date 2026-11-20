@@ -121,6 +121,8 @@ function successNestedFunctionDeclaration(): i32 {
     };
     return nested();
   }
+class GenericBase<T> {}
+class MultilineGenericDerived extends GenericBase<string> {}
 // ERROR 1012: "Unexpected token." in asi.ts(2,13+0)
 // ERROR 1012: "Unexpected token." in asi.ts(7,14+0)
 // ERROR 1012: "Unexpected token." in asi.ts(11,13+0)
