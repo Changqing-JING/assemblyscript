@@ -142,3 +142,5 @@ function successNestedFunctionDeclaration(): i32 {
 class GenericBase<T> {}
 class MultilineGenericDerived extends GenericBase
 <string> {}
+
+class ParenthesizedDerived extends (MultilineGenericDerived) {}

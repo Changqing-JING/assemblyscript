@@ -1729,10 +1729,24 @@ export class Parser extends DiagnosticEmitter {
     return Node.createFunctionExpression(declaration);
   }
 
-  /** Parses a named type in an extends or implements clause. */
+  /** Parses a named or parenthesized type in an extends or implements clause. */
   private parseHeritageType(
     tn: Tokenizer
   ): NamedTypeNode | null {
+    if (tn.skip(Token.OpenParen)) {
+      let startPos = tn.tokenPos;
+      let type = this.parseHeritageType(tn);
+      if (!type) return null;
+      if (!tn.skip(Token.CloseParen)) {
+        this.error(
+          DiagnosticCode._0_expected,
+          tn.range(tn.pos), ")"
+        );
+        return null;
+      }
+      type.range = tn.range(startPos, tn.pos);
+      return type;
+    }
     if (!tn.skipIdentifier()) {
       this.error(
         DiagnosticCode.Identifier_expected,
